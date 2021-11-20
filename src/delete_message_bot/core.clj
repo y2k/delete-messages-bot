@@ -7,22 +7,21 @@
   (doseq [x updates]
     (let [chat-id (.id (.chat (.message x)))]
       (if (some? (.newChatMembers (.message x)))
-        (->>
-         (.messageId (.message x))
-         (com.pengrad.telegrambot.request.DeleteMessage. chat-id)
-         (.execute bot))))))
+        (do
+          (println "DELETE: " (.text (.message x)))
+          (->>
+           (.messageId (.message x))
+           (com.pengrad.telegrambot.request.DeleteMessage. chat-id)
+           (.execute bot)))))))
 
-(.setUpdatesListener
- bot
- (reify com.pengrad.telegrambot.UpdatesListener
-   (process [_ updates]
-     (try
-       (handle-update updates)
-       (catch Exception ex
-         (.printStackTrace ex)))
-     -1)))
-
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
+(defn -main [& args]
+  (.setUpdatesListener
+   bot
+   (reify com.pengrad.telegrambot.UpdatesListener
+     (process [_ updates]
+       (try
+         (handle-update updates)
+         (catch Exception ex
+           (.printStackTrace ex)))
+       -1)))
+  (println "Bot started"))
