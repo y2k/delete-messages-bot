@@ -5,14 +5,21 @@
 
 (defn handle-update [updates]
   (doseq [x updates]
+    (println "LOG: " x)
     (let [chat-id (.id (.chat (.message x)))]
       (if (some? (.newChatMembers (.message x)))
         (do
-          (println "DELETE: " (.text (.message x)))
           (->>
            (.messageId (.message x))
            (com.pengrad.telegrambot.request.DeleteMessage. chat-id)
-           (.execute bot)))))))
+           (.toWebhookResponse)
+           (println "DELETE: "))
+
+          (->>
+           (.messageId (.message x))
+           (com.pengrad.telegrambot.request.DeleteMessage. chat-id)
+           (.execute bot)
+           (println "RESPONSE: ")))))))
 
 (defn -main [& args]
   (.setUpdatesListener
