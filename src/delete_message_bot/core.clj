@@ -7,7 +7,7 @@
   (doseq [x updates]
     (if (some? (.message x))
       (do
-        (println "LOG: " x)
+        (println "\nLOG: " x)
         (let [chat-id (.id (.chat (.message x)))]
           (if (some? (.newChatMembers (.message x)))
             (do
@@ -15,13 +15,13 @@
                (.messageId (.message x))
                (com.pengrad.telegrambot.request.DeleteMessage. chat-id)
                (.toWebhookResponse)
-               (println "DELETE: "))
+               (println "\nDELETE: "))
 
               (->>
                (.messageId (.message x))
                (com.pengrad.telegrambot.request.DeleteMessage. chat-id)
                (.execute bot)
-               (println "RESPONSE: ")))))))))
+               (println "\nRESPONSE: ")))))))))
 
 (defn -main [& args]
   (.setUpdatesListener
