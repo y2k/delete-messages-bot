@@ -7,7 +7,6 @@
   (doseq [x updates]
     (if (some? (.message x))
       (do
-        (println "\nLOG: " x)
         (let [chat-id (.id (.chat (.message x)))]
           (if (some? (.newChatMembers (.message x)))
             (do
