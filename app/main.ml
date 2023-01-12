@@ -1,8 +1,18 @@
 open Js_of_ocaml
+open Core
 
 module Utils = struct
   module U = Js_of_ocaml.Js.Unsafe
   module StringMap = Map.Make (String)
+
+  let execute_request (url : string) props =
+    let rec mk_req = function
+      | ReqObj props ->
+          U.obj (Array.of_list (List.map (fun (k, p) -> (k, mk_req p)) props))
+      | ReqValue v ->
+          U.inject v
+    in
+    U.global##fetch (U.inject url) (mk_req props)
 
   let entries_to_string_map entries =
     U.global ##. Array##from entries
@@ -10,22 +20,13 @@ module Utils = struct
     |> Array.fold_left
          (fun a e ->
            let k = e##at 0 in
-           let v = e##at 1 in
            if Js.typeof k = Js.string "string" then
-             StringMap.add (Js.to_string k) (Js.to_string v) a
+             StringMap.add (Js.to_string k) (Js.to_string (e##at 1)) a
            else a )
          StringMap.empty
 
   let make_response (body : string) =
     U.new_obj U.global ##. Response [|U.inject body|]
-
-  let post (url : string) (body : string) =
-    U.global##fetch (U.inject url)
-      (U.obj
-         [| ("method", U.inject "post")
-          ; ("body", U.inject body)
-          ; ("headers", U.obj [|("content-type", U.inject "application/json")|])
-         |] )
 
   let get_entries obj = U.global ##. Object##entries obj
 
@@ -42,7 +43,7 @@ let fetch req env =
           ; body= Js.to_string body }
       with
       | Some cmd ->
-          let promise = Utils.post cmd.url cmd.body in
+          let promise = Utils.execute_request cmd.url cmd.props in
           (promise##catch (fun e -> Utils.log_error e))##then_ (fun _ ->
               Utils.make_response "" )
       | None ->

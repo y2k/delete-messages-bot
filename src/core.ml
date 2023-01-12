@@ -14,7 +14,10 @@ type http_msg_props =
   {env: string StringMap.t; headers: string StringMap.t; body: string}
 [@@deriving show]
 
-type http_cmd_props = {url: string; body: string} [@@deriving show]
+type req_props = ReqValue of string | ReqObj of (string * req_props) list
+[@@deriving show]
+
+type http_cmd_props = {url: string; props: req_props} [@@deriving show]
 
 let handle' ({body; env; _} : http_msg_props) =
   match J.from_string body |> U.member "message" with
@@ -26,13 +29,21 @@ let handle' ({body; env; _} : http_msg_props) =
           Printf.sprintf "https://api.telegram.org/bot%s/deleteMessage"
             (StringMap.find "TG_TOKEN" env)
         in
+        let body =
+          `Assoc
+            [ ("chat_id", message |> U.member "chat" |> U.member "id")
+            ; ("message_id", message |> U.member "message_id") ]
+          |> Yojson.Safe.to_string
+        in
         Some
           { url
-          ; body=
-              `Assoc
-                [ ("chat_id", message |> U.member "chat" |> U.member "id")
-                ; ("message_id", message |> U.member "message_id") ]
-              |> Yojson.Safe.to_string }
+          ; props=
+              ReqObj
+                [ ("body", ReqValue body)
+                ; ("method", ReqValue "post")
+                ; ( "headers"
+                  , ReqObj [("content-type", ReqValue "application-json")] ) ]
+          }
       else None
 
 let handle'' ({env; headers; _} as msg) =
